@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>小記</title>
+<meta name="theme-color" content="#F5F2EC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="小記">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='40' fill='%232A9D8F'/%3E%3Ctext x='90' y='120' font-size='96' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle'%3E記%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href='data:application/manifest+json,{"name":"小記","short_name":"小記","start_url":".","display":"standalone","background_color":"%23F5F2EC","theme_color":"%232A9D8F","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27192%27 height=%27192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2742%27 fill=%27%232A9D8F%27/%3E%3Ctext x=%2796%27 y=%27128%27 font-size=%27104%27 font-family=%27sans-serif%27 font-weight=%27800%27 fill=%27white%27 text-anchor=%27middle%27%3E記%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<style>
+  :root{--paper:#F5F2EC;--card:#FFFFFF;--ink:#232338;--ink-soft:#5C5C72;--muted:#9E9A8F;--line:#E7E2D8;--teal:#2A9D8F;--teal-deep:#1E7B70;--teal-wash:#E3F1EE;--red:#D45A4E;--shadow:0 1px 2px rgba(35,35,56,.05),0 6px 18px rgba(35,35,56,.06);}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--paper);color:var(--ink);display:flex;flex-direction:column;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;}
+  header{padding:calc(env(safe-area-inset-top) + 14px) 18px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;}
+  .brand{display:flex;align-items:baseline;gap:9px;}
+  .brand h1{font-size:22px;font-weight:800;letter-spacing:.5px;margin:0;}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);align-self:center;}
+  .hd-right{display:flex;align-items:center;gap:6px;}
+  .today{font-size:12.5px;color:var(--ink-soft);font-weight:600;text-align:right;line-height:1.25;margin-right:2px;}
+  .today small{display:block;color:var(--muted);font-weight:500;font-size:11px;}
+  .hbtn{border:none;background:transparent;color:var(--ink-soft);cursor:pointer;padding:5px;border-radius:9px;}
+  .hbtn:active{background:var(--teal-wash);color:var(--teal-deep);}
+  .hbtn svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none;display:block;}
+  .filters{display:flex;gap:7px;padding:4px 18px 6px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+  .filters::-webkit-scrollbar{display:none;}
+  .chip{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);font-size:13px;font-weight:600;padding:6px 13px;border-radius:20px;white-space:nowrap;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px;}
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .chip .n{opacity:.55;font-weight:700;}
+  .chip .tagdot{width:8px;height:8px;border-radius:50%;}
+  main{flex:1;overflow-y:auto;padding:2px 16px 8px;-webkit-overflow-scrolling:touch;}
+  .group-head{display:flex;align-items:center;gap:9px;padding:15px 6px 8px;font-size:13px;font-weight:800;letter-spacing:.3px;color:var(--ink-soft);}
+  .group-head .bar{width:4px;height:14px;border-radius:2px;background:var(--teal);}
+  .group-head.overdue .bar{background:var(--red);}
+  .group-head.note .bar{background:var(--muted);}
+  .group-head .cnt{color:var(--muted);font-weight:600;font-size:12px;}
+  .card{background:var(--card);border-radius:14px;padding:13px 14px;margin-bottom:9px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:flex-start;transition:.2s;}
+  .card.done{opacity:.55;}
+  .card.pinned{border:1px solid #F0E4C4;}
+  .check{flex-shrink:0;width:23px;height:23px;border-radius:50%;border:2px solid var(--line);margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .check.on{background:var(--teal);border-color:var(--teal);}
+  .check svg{width:13px;height:13px;stroke:#fff;stroke-width:3.4;fill:none;opacity:0;transform:scale(.5);transition:.15s;}
+  .check.on svg{opacity:1;transform:scale(1);}
+  .body{flex:1;min-width:0;}
+  .title{font-size:15.5px;font-weight:600;line-height:1.4;word-break:break-word;}
+  .card.done .title{text-decoration:line-through;color:var(--muted);}
+  .meta{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;}
+  .badge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;}
+  .b-time{background:var(--teal-wash);color:var(--teal-deep);}
+  .b-time.over{background:#FBE6E3;color:var(--red);}
+  .b-time svg{width:11px;height:11px;fill:currentColor;}
+  .b-rep{background:#EEF3F7;color:#3B6EA5;}
+  .tag-pill{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:7px;}
+  .ics-btn{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid var(--teal);background:transparent;color:var(--teal-deep);cursor:pointer;}
+  .ics-btn:active{background:var(--teal-wash);}
+  .del{flex-shrink:0;width:30px;height:30px;border-radius:8px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .del:active{background:#FBE6E3;color:var(--red);}
+  .del svg{width:17px;height:17px;stroke:currentColor;stroke-width:2;fill:none;}
+  .empty{text-align:center;padding:40px 24px;color:var(--ink-soft);}
+  .empty .ico{font-size:40px;margin-bottom:12px;}
+  .empty p{margin:0 0 18px;font-size:14.5px;line-height:1.6;}
+  .examples{display:flex;flex-direction:column;gap:8px;max-width:330px;margin:0 auto;}
+  .ex{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--ink);text-align:left;cursor:pointer;box-shadow:var(--shadow);transition:.15s;}
+  .ex:active{background:var(--teal-wash);border-color:var(--teal);}
+  .ex span{color:var(--teal-deep);font-weight:700;}
+  .bubble{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 84px);background:var(--ink);color:#fff;padding:12px 16px;border-radius:14px;font-size:14px;line-height:1.5;box-shadow:0 8px 24px rgba(35,35,56,.28);opacity:0;transform:translateY(8px);pointer-events:none;transition:.25s;z-index:15;display:flex;gap:10px;align-items:flex-start;}
+  .bubble.show{opacity:1;transform:translateY(0);}
+  .bubble .av{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;}
+  .composer{flex-shrink:0;padding:10px 14px calc(env(safe-area-inset-bottom) + 12px);background:linear-gradient(to top,var(--paper) 70%,rgba(245,242,236,0));display:flex;gap:9px;align-items:flex-end;}
+  .icon-btn{flex-shrink:0;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);transition:.15s;color:var(--ink-soft);}
+  .icon-btn:active,.icon-btn.rec{background:var(--teal-wash);color:var(--teal-deep);}
+  .icon-btn.rec{border-color:var(--teal);}
+  .icon-btn svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;fill:none;}
+  .input-wrap{flex:1;background:var(--card);border:1px solid var(--line);border-radius:22px;display:flex;align-items:flex-end;padding:4px 4px 4px 16px;box-shadow:var(--shadow);}
+  textarea{flex:1;border:none;outline:none;resize:none;background:transparent;font-family:inherit;font-size:15.5px;line-height:1.45;color:var(--ink);max-height:110px;padding:9px 0;}
+  textarea::placeholder{color:var(--muted);}
+  .send{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:none;background:var(--teal);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .send:disabled{background:var(--line);}
+  .send svg{width:19px;height:19px;fill:#fff;}
+  .spin{width:17px;height:17px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .sheet-mask{position:fixed;inset:0;background:rgba(35,35,56,.4);opacity:0;pointer-events:none;transition:.25s;z-index:20;}
+  .sheet-mask.show{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--paper);z-index:21;border-radius:20px 20px 0 0;transform:translateY(100%);transition:.3s cubic-bezier(.3,.9,.4,1);max-height:88dvh;display:flex;flex-direction:column;box-shadow:0 -8px 30px rgba(35,35,56,.2);}
+  .sheet.show{transform:translateY(0);}
+  .sheet-head{padding:16px 20px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;}
+  .sheet-head h3{margin:0;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;min-width:0;}
+  .sheet-head .q{color:var(--ink-soft);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sheet-close{border:none;background:var(--card);width:32px;height:32px;border-radius:50%;flex-shrink:0;font-size:18px;color:var(--ink-soft);cursor:pointer;box-shadow:var(--shadow);}
+  .sheet-body{overflow-y:auto;padding:4px 20px calc(env(safe-area-inset-bottom) + 20px);}
+  .answer{font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
+  .answer b{font-weight:800;}
+  .sources{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
+  .sources .st{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.5px;margin-bottom:8px;}
+  .src{display:block;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:8px;text-decoration:none;box-shadow:var(--shadow);}
+  .src .t{font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4;}
+  .src .u{font-size:11.5px;color:var(--teal-deep);margin-top:3px;word-break:break-all;}
+  .searching{text-align:center;padding:30px;color:var(--ink-soft);}
+  .searching .spin{margin:0 auto 14px;width:26px;height:26px;border-color:var(--line);border-top-color:var(--teal);}
+  .set-row{margin-bottom:16px;}
+  .set-row label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+  .set-row input,.set-row select{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 14px;font-size:15px;font-family:inherit;background:var(--card);color:var(--ink);}
+  .set-row p{font-size:12.5px;color:var(--muted);line-height:1.6;margin:6px 0 0;}
+  .set-row p a{color:var(--teal-deep);}
+  .set-save{width:100%;border:none;background:var(--teal);color:#fff;font-weight:800;font-size:15px;padding:13px;border-radius:12px;cursor:pointer;margin-top:4px;}
+  .status-line{font-size:12.5px;color:var(--muted);margin-top:14px;text-align:center;}
+  .ed-tags{display:flex;flex-wrap:wrap;gap:8px;}
+  .ed-tag{border:1px solid var(--line);background:var(--card);padding:7px 13px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--ink-soft);}
+  .ed-tag .d{width:9px;height:9px;border-radius:50%;}
+  .ed-del{width:100%;border:1px solid #F0C6C1;background:transparent;color:var(--red);font-weight:700;font-size:14px;padding:12px;border-radius:12px;cursor:pointer;margin-top:10px;}
+  .seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px;margin-bottom:12px;}
+  .seg button{flex:1;border:none;background:transparent;font-family:inherit;font-size:14px;font-weight:700;color:var(--ink-soft);padding:9px;border-radius:9px;cursor:pointer;}
+  .seg button.on{background:var(--ink);color:#fff;}
+  .ai-in{display:flex;gap:8px;margin-bottom:12px;}
+  .ai-in input{flex:1;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;font-family:inherit;background:var(--card);}
+  .ai-in button{border:none;background:var(--teal);color:#fff;font-weight:800;padding:0 16px;border-radius:12px;cursor:pointer;}
+  .quick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .quick button{border:1px solid var(--line);background:var(--card);color:var(--teal-deep);font-weight:700;font-size:13px;padding:8px 12px;border-radius:20px;cursor:pointer;}
+  .quick button:active{background:var(--teal-wash);}
+  .pin-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px;}
+  .pin-toggle label{font-size:14px;font-weight:700;}
+  .sw{width:46px;height:27px;border-radius:14px;background:var(--line);position:relative;cursor:pointer;transition:.2s;flex-shrink:0;}
+  .sw.on{background:var(--teal);}
+  .sw::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.2s;}
+  .sw.on::after{left:22px;}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand"><h1>小記</h1><div class="dot"></div></div>
+    <div class="hd-right">
+      <div class="today" id="today"></div>
+      <button class="hbtn" id="aiBtn" title="AI 助手"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z"/><path d="M18 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></svg></button>
+      <button class="hbtn" id="gearBtn" title="設定"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg></button>
+    </div>
+  </header>
+
+  <div class="filters" id="statusFilters"></div>
+  <div class="filters" id="tagFilters"></div>
+  <main id="list"></main>
+
+  <div class="bubble" id="bubble"><div class="av">記</div><div id="bubbleText"></div></div>
+
+  <div class="composer">
+    <button class="icon-btn" id="micBtn" title="語音輸入"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0012 0M12 17v3"/></svg></button>
+    <div class="input-wrap"><textarea id="input" rows="1" placeholder="記事就直接說，例如「明天三點提醒我開會」"></textarea></div>
+    <button class="send" id="send"><svg viewBox="0 0 24 24"><path d="M3 20.5v-6l8-2.5-8-2.5v-6l19 8.5z"/></svg></button>
+  </div>
+
+  <div class="sheet-mask" id="mask"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-head"><h3 id="sheetTitle"></h3><button class="sheet-close" id="sheetClose">×</button></div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+
+<script>
+const KEY='xiaoji_items_v3', AKEY='xiaoji_apikey';
+const TAGS=[
+  {id:'teach',name:'教學',color:'#2A9D8F',wash:'#E3F1EE'},
+  {id:'invest',name:'投資',color:'#D9A129',wash:'#FBF0D5'},
+  {id:'ai',name:'AI工具',color:'#7C5CD9',wash:'#EBE5FA'},
+  {id:'life',name:'生活',color:'#3B82C4',wash:'#E1ECF7'},
+  {id:'travel',name:'旅行',color:'#E0724E',wash:'#FBE7DE'},
+  {id:'idea',name:'靈感',color:'#D9538B',wash:'#FBE2ED'},
+];
+const tagMap=Object.fromEntries(TAGS.map(t=>[t.id,t]));
+const REP={none:'',daily:'每天',weekly:'每週',monthly:'每月',bimonthly:'每2個月'};
+let items=[],filter='todo',tagFilter='all';
+const apiKey=()=>localStorage.getItem(AKEY)||'';
+const AIMODE='xiaoji_aimode',OURL='xiaoji_ollama_url',OMODEL='xiaoji_ollama_model';
+const aiSrc=()=>localStorage.getItem(AIMODE)||(apiKey()?'anthropic':'off');
+function hasAI(){const m=aiSrc();return (m==='anthropic'&&apiKey())||(m==='ollama'&&localStorage.getItem(OURL));}
+async function ollamaChat(system,user,jsonFormat){
+  const base=(localStorage.getItem(OURL)||'').replace(/\/+$/,'');
+  const model=localStorage.getItem(OMODEL)||'qwen2.5:3b';
+  const body={model,stream:false,messages:[{role:'system',content:system},{role:'user',content:user}]};
+  if(jsonFormat)body.format='json';
+  const res=await fetch(base+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok)throw new Error('Ollama '+res.status);
+  const data=await res.json();return (data.message&&data.message.content)||'';
+}
+
+function loadItems(){try{items=JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){items=[];}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(items));}catch(e){}}
+
+const WD=['日','一','二','三','四','五','六'];
+const pad=n=>String(n).padStart(2,'0');
+function todayStr(){const d=new Date();return `${d.getMonth()+1}月${d.getDate()}日 · 星期${WD[d.getDay()]}`;}
+function startOfDay(d){const x=new Date(d);x.setHours(0,0,0,0);return x;}
+function dayDiff(iso){return Math.round((startOfDay(new Date(iso))-startOfDay(new Date()))/86400000);}
+function groupLabel(it){
+  if(!it.datetime)return{key:'note',label:'記事本',order:9e15};
+  const diff=dayDiff(it.datetime),t=new Date(it.datetime).getTime();
+  if(!it.done&&t<Date.now()&&diff<0)return{key:'overdue',label:'逾期',order:-1};
+  const d=new Date(it.datetime);let label;
+  if(diff===0)label='今天';else if(diff===1)label='明天';else if(diff===-1)label='昨天';
+  else if(diff===2)label='後天';else label=`${d.getMonth()+1}/${d.getDate()}（週${WD[d.getDay()]}）`;
+  return{key:'d'+startOfDay(d).getTime(),label,order:startOfDay(d).getTime()};
+}
+function timeText(it){if(!it.datetime||it.allDay)return null;const d=new Date(it.datetime),h=d.getHours(),m=d.getMinutes(),ap=h<12?'上午':'下午';let hh=h%12;if(hh===0)hh=12;return `${ap}${hh}:${pad(m)}`;}
+
+function counts(){const a=items.filter(i=>!i.archived);return{all:a.length,todo:a.filter(i=>!i.done).length,done:a.filter(i=>i.done).length,archived:items.filter(i=>i.archived).length};}
+function renderFilters(){
+  const c=counts();
+  const sf=[['todo','待辦',c.todo],['all','全部',c.all],['done','完成',c.done],['archived','封存',c.archived]];
+  document.getElementById('statusFilters').innerHTML=sf.map(([k,l,n])=>`<div class="chip ${filter===k?'active':''}" data-f="${k}">${l}<span class="n">${n}</span></div>`).join('');
+  const tf=[`<div class="chip ${tagFilter==='all'?'active':''}" data-tf="all">全部標籤</div>`].concat(TAGS.map(t=>`<div class="chip ${tagFilter===t.id?'active':''}" data-tf="${t.id}"><span class="tagdot" style="background:${t.color}"></span>${t.name}</div>`)).join('');
+  document.getElementById('tagFilters').innerHTML=tf;
+  document.querySelectorAll('[data-f]').forEach(el=>el.onclick=()=>{filter=el.dataset.f;render();});
+  document.querySelectorAll('[data-tf]').forEach(el=>el.onclick=()=>{tagFilter=el.dataset.tf;render();});
+}
+function render(){
+  renderFilters();
+  const list=document.getElementById('list');
+  let show=items.filter(i=>filter==='archived'?i.archived:(!i.archived&&(filter==='all'?true:filter==='todo'?!i.done:i.done))).filter(i=>tagFilter==='all'?true:i.tag===tagFilter);
+  if(show.length===0){
+    list.innerHTML=`<div class="empty"><div class="ico">🗒️</div><p>${filter==='done'?'還沒有完成的項目。':filter==='archived'?'沒有封存的項目。':'還沒有記事。<br>用一句話告訴我，我幫你整理。'}</p>${(filter==='done'||filter==='archived')?'':`<div class="examples"><div class="ex" data-t="明天下午三點提醒我跟家長開會"><span>提醒</span>　明天下午三點跟家長開會</div><div class="ex" data-t="每週三下午提醒我交作業"><span>週期</span>　每週三下午交作業</div><div class="ex" data-t="記一下：想研究的AI繪圖模型 Krea 2"><span>記事</span>　想研究的 AI 繪圖模型</div></div>`}</div>`;
+    document.querySelectorAll('.ex').forEach(el=>el.onclick=()=>{document.getElementById('input').value=el.dataset.t;handleRecord();});
+    return;
+  }
+  const groups={};
+  show.forEach(it=>{const g=groupLabel(it);(groups[g.key]=groups[g.key]||{...g,items:[]}).items.push(it);});
+  const ordered=Object.values(groups).sort((a,b)=>a.order-b.order);
+  ordered.forEach(g=>g.items.sort((a,b)=>{
+    if(g.key==='note'){if((b.pinned?1:0)!==(a.pinned?1:0))return (b.pinned?1:0)-(a.pinned?1:0);return b.created-a.created;}
+    const ta=a.datetime?new Date(a.datetime).getTime():a.created,tb=b.datetime?new Date(b.datetime).getTime():b.created;return ta-tb;}));
+  list.innerHTML=ordered.map(g=>{
+    const cls=g.key==='overdue'?'overdue':g.key==='note'?'note':'';
+    const rows=g.items.map(it=>{
+      const tt=timeText(it),over=it.datetime&&!it.done&&new Date(it.datetime).getTime()<Date.now();
+      const badge=tt?`<span class="badge b-time ${over?'over':''}"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 10.6l4 2.3-.9 1.6L11 13V6h2z"/></svg>${tt}</span>`:'';
+      const overBadge=(over&&!tt)?`<span class="badge b-time over">逾期</span>`:'';
+      const repBadge=(it.repeat&&it.repeat!=='none')?`<span class="badge b-rep">🔁 ${REP[it.repeat]}</span>`:'';
+      const tg=it.tag&&tagMap[it.tag];
+      const tagPill=tg?`<span class="tag-pill" style="background:${tg.wash};color:${tg.color}">${tg.name}</span>`:'';
+      const icsBtn=(it.datetime&&!it.done)?`<button class="ics-btn" data-ics="${it.id}">🔔 加通知</button>`:'';
+      const pin=it.pinned?'📌 ':'';
+      const meta=(badge||overBadge||repBadge||tagPill||icsBtn)?`<div class="meta">${badge}${overBadge}${repBadge}${tagPill}${icsBtn}</div>`:'';
+      return `<div class="card ${it.done?'done':''} ${it.pinned?'pinned':''}"><div class="check ${it.done?'on':''}" data-id="${it.id}"><svg viewBox="0 0 24 24"><polyline points="4,12 10,18 20,5"/></svg></div><div class="body" data-edit="${it.id}"><div class="title">${pin}${esc(it.title)}</div>${meta}</div><button class="del" data-del="${it.id}"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button></div>`;
+    }).join('');
+    return `<div class="group-head ${cls}"><span class="bar"></span>${g.label}<span class="cnt">${g.items.length}</span></div>${rows}`;
+  }).join('');
+  document.querySelectorAll('.check').forEach(el=>el.onclick=()=>toggle(el.dataset.id));
+  document.querySelectorAll('.del').forEach(el=>el.onclick=()=>del(el.dataset.del));
+  document.querySelectorAll('.ics-btn').forEach(el=>el.onclick=e=>{e.stopPropagation();addToCalendar(el.dataset.ics);});
+  document.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>openEdit(el.dataset.edit));
+}
+const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function nextOccur(iso,repeat){
+  let d=new Date(iso),now=Date.now();
+  do{ if(repeat==='daily')d.setDate(d.getDate()+1); else if(repeat==='weekly')d.setDate(d.getDate()+7); else if(repeat==='monthly')d.setMonth(d.getMonth()+1); else if(repeat==='bimonthly')d.setMonth(d.getMonth()+2); else break; }while(d.getTime()<=now);
+  return d;
+}
+function toggle(id){
+  const it=items.find(i=>i.id===id);if(!it)return;
+  if(!it.done&&it.repeat&&it.repeat!=='none'&&it.datetime){
+    it.datetime=nextOccur(it.datetime,it.repeat).toISOString();it.notified=false;
+    const d=new Date(it.datetime);showBubble(`已完成，下次：${d.getMonth()+1}/${d.getDate()}`);
+  }else{it.done=!it.done;}
+  save();render();
+}
+function del(id){items=items.filter(i=>i.id!==id);save();render();}
+function addItems(arr){
+  arr.forEach(a=>items.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),title:a.title||'未命名',datetime:a.datetime||null,allDay:!!a.allDay,tag:(a.tag&&tagMap[a.tag])?a.tag:'life',repeat:REP[a.repeat]?a.repeat:'none',pinned:false,archived:false,done:false,notified:false,created:Date.now()}));
+  save();render();scheduleChecks();
+}
+let bubbleTimer;
+function showBubble(t){const b=document.getElementById('bubble');document.getElementById('bubbleText').textContent=t;b.classList.add('show');clearTimeout(bubbleTimer);bubbleTimer=setTimeout(()=>b.classList.remove('show'),4200);}
+
+function requestNotify(){if('Notification'in window&&Notification.permission==='default'){try{Notification.requestPermission();}catch(e){}}}
+function fireNotify(it){const t=timeText(it)||'現在';if('Notification'in window&&Notification.permission==='granted'){try{new Notification('⏰ 小記提醒',{body:`${it.title}（${t}）`});}catch(e){}}showBubble(`⏰ 提醒：${it.title}`);}
+let checkTimer;
+function scheduleChecks(){clearInterval(checkTimer);checkTimer=setInterval(()=>{
+  const now=Date.now();let changed=false;
+  items.forEach(it=>{if(it.datetime&&!it.done&&!it.notified&&new Date(it.datetime).getTime()<=now){
+    fireNotify(it);
+    if(it.repeat&&it.repeat!=='none'){it.datetime=nextOccur(it.datetime,it.repeat).toISOString();it.notified=false;}
+    else{it.notified=true;}
+    changed=true;
+  }});
+  if(changed){save();render();}
+},20000);}
+
+function icsStamp(d,allDay){const z=n=>String(n).padStart(2,'0');if(allDay)return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}`;return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}T${z(d.getHours())}${z(d.getMinutes())}00`;}
+function addToCalendar(id){
+  const it=items.find(i=>i.id===id);if(!it||!it.datetime)return;
+  const start=new Date(it.datetime),uid='xiaoji-'+it.id+'@local';
+  const now=new Date(),dtstamp=icsStamp(new Date(now.getTime()+now.getTimezoneOffset()*60000),false)+'Z';
+  let ev;
+  if(it.allDay)ev=`DTSTART;VALUE=DATE:${icsStamp(start,true)}`;
+  else{const end=new Date(start.getTime()+30*60000);ev=`DTSTART:${icsStamp(start,false)}\nDTEND:${icsStamp(end,false)}`;}
+  const rrule=it.repeat==='daily'?'\nRRULE:FREQ=DAILY':it.repeat==='weekly'?'\nRRULE:FREQ=WEEKLY':it.repeat==='monthly'?'\nRRULE:FREQ=MONTHLY':it.repeat==='bimonthly'?'\nRRULE:FREQ=MONTHLY;INTERVAL=2':'';
+  const alarm=it.allDay?'TRIGGER:-PT9H':'TRIGGER:PT0M';
+  const ics=`BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//xiaoji//TW\nCALSCALE:GREGORIAN\nBEGIN:VEVENT\nUID:${uid}\nDTSTAMP:${dtstamp}\n${ev}${rrule}\nSUMMARY:${(it.title||'提醒').replace(/[\n,;]/g,' ')}\nBEGIN:VALARM\nACTION:DISPLAY\nDESCRIPTION:小記提醒\n${alarm}\nEND:VALARM\nEND:VEVENT\nEND:VCALENDAR`;
+  const blob=new Blob([ics],{type:'text/calendar'}),url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=(it.title||'reminder')+'.ics';document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1500);
+  showBubble('已產生行事曆通知，點「加入」即可。');
+}
+
+/* 離線本機解析 */
+const CN={零:0,一:1,二:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10};
+function cnNum(s){if(!s)return null;if(/^\d+$/.test(s))return +s;if(s==='十')return 10;let m=s.match(/^十([一二三四五六七八九])$/);if(m)return 10+CN[m[1]];m=s.match(/^([一二三四五六七八九])十([一二三四五六七八九])?$/);if(m)return CN[m[1]]*10+(m[2]?CN[m[2]]:0);if(CN[s]!=null)return CN[s];return null;}
+function localParse(text){
+  const now=new Date();let d=new Date(now),hasDate=false,hasTime=false,repeat='none';
+  if(/每天|每日/.test(text))repeat='daily';
+  if(/每兩個月|每2個月|每兩月/.test(text))repeat='bimonthly';
+  else if(/每月/.test(text))repeat='monthly';
+  let rw=text.match(/每(週|周|星期|禮拜)([一二三四五六日天])?/);
+  if(rw){repeat='weekly';if(rw[2]){const map={一:1,二:2,三:3,四:4,五:5,六:6,日:0,天:0};const target=map[rw[2]];let add=(target-now.getDay()+7)%7;if(add===0)add=7;d=new Date(now);d.setDate(d.getDate()+add);hasDate=true;}}
+  if(/今天|今日/.test(text))hasDate=true;
+  else if(/明天|明日/.test(text)){d.setDate(d.getDate()+1);hasDate=true;}
+  else if(/大後天/.test(text)){d.setDate(d.getDate()+3);hasDate=true;}
+  else if(/後天/.test(text)){d.setDate(d.getDate()+2);hasDate=true;}
+  let wm=text.match(/(下|這|本)?(週|周|星期|禮拜)([一二三四五六日天])/);
+  if(wm&&repeat==='none'){const map={一:1,二:2,三:3,四:4,五:5,六:6,日:0,天:0};const target=map[wm[3]];let add=(target-now.getDay()+7)%7;if(wm[1]==='下')add+=7;else if(add===0)add=7;d=new Date(now);d.setDate(d.getDate()+add);hasDate=true;}
+  let md=text.match(/(\d{1,2})\s*[\/月]\s*(\d{1,2})/);
+  if(md){d=new Date(now);d.setMonth(+md[1]-1);d.setDate(+md[2]);if(d<startOfDay(now))d.setFullYear(d.getFullYear()+1);hasDate=true;}
+  let tm=text.match(/(上午|早上|中午|下午|晚上|凌晨)?\s*(\d{1,2}|[零一二兩三四五六七八九十]+)\s*[點:時]\s*(半|\d{1,2}|[零一二兩三四五六七八九十]+)?/);
+  if(tm){let hh=cnNum(tm[2]),mm=0;if(tm[3]==='半')mm=30;else if(tm[3])mm=cnNum(tm[3])||0;const ap=tm[1];if(ap&&/下午|晚上/.test(ap)&&hh<12)hh+=12;if(ap==='中午')hh=12;if(ap==='凌晨'&&hh===12)hh=0;if(hh!=null){d.setHours(hh,mm,0,0);hasTime=true;hasDate=true;}}
+  let title=text.replace(/提醒我|記一下|幫我記|記得|備註[:：]?/g,'').trim();
+  if(hasDate||repeat!=='none'){if(!hasTime)d.setHours(9,0,0,0);return{items:[{type:'reminder',title,datetime:d.toISOString(),allDay:!hasTime,tag:'life',repeat}]};}
+  return{items:[{type:'note',title,datetime:null,tag:'life',repeat:'none'}]};
+}
+async function apiCall(body){
+  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey(),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(body)});
+  const data=await res.json();if(data.error)throw new Error(data.error.message||'api');return data;
+}
+function parseSys(){
+  const now=new Date(),nowStr=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const tagList=TAGS.map(t=>`${t.id}=${t.name}`).join('、');
+  return `你是繁體中文記事助理。現在時間 ${nowStr}（星期${WD[now.getDay()]}）。把使用者輸入解析成待辦或記事，只回傳 JSON，禁止多餘文字或 markdown。格式：{"reply":"一句簡短確認","items":[{"type":"reminder|note","title":"精簡標題","datetime":"YYYY-MM-DDTHH:MM:00 或 null","allDay":true或false,"tag":"標籤id","repeat":"none|daily|weekly|monthly"}]}標籤只能選一個最貼近的：${tagList}，分不出來用 life。規則：有時間或日期→reminder並算出datetime；只想記下→note且datetime為null；相對日期換算真實日期；只有日期沒時間→該日09:00且allDay為true；「每天/每週X/每月」設定對應repeat並算出下一次datetime；title去贅字；一句多件事拆多個items。`;
+}
+async function parseWithAI(text){
+  const data=await apiCall({model:"claude-sonnet-4-6",max_tokens:1000,system:parseSys(),messages:[{role:"user",content:text}]});
+  let raw=data.content.filter(c=>c.type==="text").map(c=>c.text).join("").trim().replace(/```json/gi,"").replace(/```/g,"").trim();
+  return JSON.parse(raw);
+}
+async function parseWithOllama(text){
+  let raw=(await ollamaChat(parseSys(),text,true)).trim().replace(/```json/gi,"").replace(/```/g,"").trim();
+  return JSON.parse(raw);
+}
+async function handleRecord(){
+  const inp=document.getElementById('input'),text=inp.value.trim();if(!text)return;
+  requestNotify();
+  const btn=document.getElementById('send');btn.disabled=true;btn.innerHTML='<div class="spin"></div>';
+  inp.value='';inp.style.height='auto';
+  try{
+    let out;
+    const src=aiSrc();
+    if(src==='anthropic'&&apiKey())out=await parseWithAI(text);
+    else if(src==='ollama'&&localStorage.getItem(OURL))out=await parseWithOllama(text);
+    else{out=localParse(text);out.reply='已記下（離線解析）。';}
+    if(out.items&&out.items.length){addItems(out.items);showBubble(out.reply||'好的，記下來了。');}
+    else{addItems([{title:text}]);showBubble('先幫你存成記事了。');}
+  }catch(e){const out=localParse(text);addItems(out.items);showBubble('AI 連線失敗，改用離線解析記下了。');}
+  finally{btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24"><path d="M3 20.5v-6l8-2.5-8-2.5v-6l19 8.5z"/></svg>';btn.onclick=handleRecord;}
+}
+
+/* Sheet 共用 */
+function openSheet(title){document.getElementById('sheetTitle').innerHTML=title;document.getElementById('mask').classList.add('show');document.getElementById('sheet').classList.add('show');}
+function closeSheet(){document.getElementById('mask').classList.remove('show');document.getElementById('sheet').classList.remove('show');}
+
+/* AI 助手：問記事 / 查網路 */
+let aiMode='notes';
+function openAssistant(){
+  aiMode='notes';
+  openSheet('✨ AI 助手');
+  document.getElementById('sheetBody').innerHTML=`
+    <div class="seg"><button class="on" data-m="notes">問我的記事</button><button data-m="web">查網路</button></div>
+    <div class="ai-in"><input id="aiQ" type="text" placeholder="問我的記事…"><button id="aiGo">送出</button></div>
+    <div class="quick" id="aiQuick">
+      <button data-q="根據我今天以及逾期的待辦，幫我排出今天的優先順序，並給一句行動建議。">規劃今天</button>
+      <button data-q="列出我從今天到本週日之間到期的提醒。">本週要交</button>
+      <button data-q="把我標籤為靈感的記事，整理成幾個主題。">整理靈感</button>
+    </div>
+    <div class="answer" id="aiAnswer" style="color:var(--muted)">${hasAI()?'問我任何關於你記事的問題，或切到「查網路」。':'AI 功能需要設定來源（右上齒輪）：Anthropic 金鑰或本機 Ollama。'}</div>`;
+  const seg=document.querySelectorAll('.seg button');
+  seg.forEach(b=>b.onclick=()=>{aiMode=b.dataset.m;seg.forEach(x=>x.className=x.dataset.m===aiMode?'on':'');document.getElementById('aiQuick').style.display=aiMode==='notes'?'flex':'none';document.getElementById('aiQ').placeholder=aiMode==='notes'?'問我的記事…':'查網路…';});
+  document.getElementById('aiGo').onclick=()=>runAsk(document.getElementById('aiQ').value.trim());
+  document.getElementById('aiQ').addEventListener('keydown',e=>{if(e.key==='Enter')runAsk(e.target.value.trim());});
+  document.querySelectorAll('#aiQuick button').forEach(b=>b.onclick=()=>{document.getElementById('aiQ').value=b.dataset.q;runAsk(b.dataset.q);});
+}
+function notesContext(){
+  return items.map(it=>({標題:it.title,時間:it.datetime?new Date(it.datetime).toLocaleString('zh-TW'):'無',標籤:tagMap[it.tag]?tagMap[it.tag].name:'',狀態:it.done?'已完成':'待辦',重複:REP[it.repeat]||'無'}));
+}
+async function runAsk(q){
+  if(!q)return;
+  const ans=document.getElementById('aiAnswer');
+  if(!hasAI()){ans.style.color='var(--ink)';ans.innerHTML='這個功能需要 AI 來源，請到右上齒輪選 Anthropic 金鑰或本機 Ollama。';return;}
+  ans.style.color='var(--ink)';ans.innerHTML=`<div class="searching"><div class="spin"></div>思考中…</div>`;
+  try{
+    if(aiMode==='notes'){
+      const now=new Date();
+      const sys=`你是使用者的私人記事助理，回答要用繁體中文、台灣用語、簡潔。現在時間：${now.toLocaleString('zh-TW')}。以下是使用者的所有記事（JSON）：\n${JSON.stringify(notesContext())}\n只根據這些記事回答；沒有相關資料就說找不到。`;
+      let text;
+      if(aiSrc()==='ollama'){text=await ollamaChat(sys,q,false);}
+      else{const data=await apiCall({model:"claude-sonnet-4-6",max_tokens:1000,system:sys,messages:[{role:"user",content:q}]});text=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("").trim();}
+      ans.innerHTML=`<div class="answer">${esc(text||'找不到相關記事。').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</div>`;
+    }else{
+      if(aiSrc()!=='anthropic'){ans.innerHTML='<div class="answer">查網路需要 Anthropic 金鑰；本機 Ollama 無法上網。可到設定切換來源。</div>';return;}
+      const data=await apiCall({model:"claude-sonnet-4-6",max_tokens:1000,system:"用繁體中文、台灣用語，根據網路搜尋結果簡潔回答。重點先講。",messages:[{role:"user",content:q}],tools:[{type:"web_search_20250305",name:"web_search"}]});
+      const text=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("").trim();
+      const srcs=[];(data.content||[]).forEach(c=>{if(c.type==="web_search_tool_result"&&Array.isArray(c.content))c.content.forEach(r=>{if(r.url)srcs.push({url:r.url,title:r.title||r.url});});if(c.type==="text"&&Array.isArray(c.citations))c.citations.forEach(ct=>{if(ct.url)srcs.push({url:ct.url,title:ct.title||ct.url});});});
+      const seen=new Set(),uniq=srcs.filter(s=>!seen.has(s.url)&&seen.add(s.url)).slice(0,6);
+      let html=`<div class="answer">${esc(text||'找不到結果。').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</div>`;
+      if(uniq.length)html+=`<div class="sources"><div class="st">來源</div>${uniq.map(s=>`<a class="src" href="${s.url}" target="_blank" rel="noopener"><div class="t">${esc(s.title)}</div><div class="u">${esc(s.url)}</div></a>`).join('')}</div>`;
+      ans.innerHTML=html;
+    }
+  }catch(e){ans.innerHTML=`<div class="answer">出錯了：${esc(e.message||'')}<br>${aiSrc()==='ollama'?'請確認 Mac 開著、Ollama 在跑、Tailscale 網址正確。':'請確認 API 金鑰與網路。'}</div>`;}
+}
+
+/* 編輯 */
+let editTag='life';
+function openEdit(id){
+  const it=items.find(i=>i.id===id);if(!it)return;
+  editTag=it.tag||'life';
+  let dtVal='';if(it.datetime){const d=new Date(it.datetime);dtVal=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+  openSheet('✏️ 編輯');
+  document.getElementById('sheetBody').innerHTML=`
+    <div class="set-row"><label>內容</label><input id="edTitle" type="text" value="${esc(it.title)}"></div>
+    <div class="set-row"><label>時間（留空＝純記事）</label><input id="edDt" type="datetime-local" value="${dtVal}"></div>
+    <div class="set-row"><label>重複</label><select id="edRep"><option value="none">不重複</option><option value="daily">每天</option><option value="weekly">每週</option><option value="monthly">每月</option><option value="bimonthly">每2個月</option></select></div>
+    <div class="set-row"><label>標籤</label><div class="ed-tags" id="edTags">${TAGS.map(t=>`<div class="ed-tag ${t.id===editTag?'on':''}" data-t="${t.id}" style="${t.id===editTag?`background:${t.color};color:#fff;border-color:transparent;`:''}"><span class="d" style="background:${t.id===editTag?'#fff':t.color}"></span>${t.name}</div>`).join('')}</div></div>
+    <div class="pin-toggle"><label>置頂（記事本）</label><div class="sw ${it.pinned?'on':''}" id="edPin"></div></div>
+    <button class="set-save" id="edSave">儲存</button>
+    <button class="ed-del" id="edArchive" style="border-color:var(--line);color:var(--ink-soft)">${it.archived?'移出封存':'封存這則'}</button>
+    <button class="ed-del" id="edDelete">刪除這則</button>`;
+  document.getElementById('edRep').value=it.repeat||'none';
+  let pinned=!!it.pinned;document.getElementById('edPin').onclick=function(){pinned=!pinned;this.className='sw'+(pinned?' on':'');};
+  document.querySelectorAll('#edTags .ed-tag').forEach(el=>el.onclick=()=>{editTag=el.dataset.t;document.querySelectorAll('#edTags .ed-tag').forEach(x=>{const tg=tagMap[x.dataset.t],on=x.dataset.t===editTag;x.className='ed-tag'+(on?' on':'');x.style.cssText=on?`background:${tg.color};color:#fff;border-color:transparent;`:'';x.querySelector('.d').style.background=on?'#fff':tg.color;});});
+  document.getElementById('edSave').onclick=()=>{
+    const t=document.getElementById('edTitle').value.trim(),dv=document.getElementById('edDt').value,rp=document.getElementById('edRep').value;
+    if(!t){showBubble('內容不能空白。');return;}
+    it.title=t;it.tag=editTag;it.repeat=rp;it.pinned=pinned;
+    if(dv){it.datetime=new Date(dv).toISOString();it.allDay=false;it.notified=false;}else{it.datetime=null;it.allDay=false;it.repeat='none';}
+    save();render();closeSheet();showBubble('已更新。');
+  };
+  document.getElementById('edArchive').onclick=()=>{it.archived=!it.archived;save();render();closeSheet();showBubble(it.archived?'已封存。':'已移出封存。');};
+  document.getElementById('edDelete').onclick=()=>{del(it.id);closeSheet();showBubble('已刪除。');};
+}
+
+/* 設定 */
+function srcFields(src){
+  if(src==='anthropic')return `<div class="set-row"><label>Anthropic API 金鑰</label><input id="apiInput" type="password" placeholder="sk-ant-..." value="${esc(apiKey())}" autocomplete="off"><p>可查網路。金鑰只存本機。到 <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> 取得。</p></div>`;
+  if(src==='ollama')return `<div class="set-row"><label>Ollama 網址（Tailscale Serve 的 https）</label><input id="oUrl" type="text" placeholder="https://mac.你的tailnet.ts.net" value="${esc(localStorage.getItem(OURL)||'')}" autocomplete="off"><p>手機會擋 http，需用 Tailscale Serve 取得 https 網址（Mac 步驟見下）。免費、但 Mac 要開著，且不能查網路。</p></div><div class="set-row"><label>模型名稱</label><input id="oModel" type="text" placeholder="qwen2.5:3b" value="${esc(localStorage.getItem(OMODEL)||'qwen2.5:3b')}" autocomplete="off"></div>`;
+  return `<p style="font-size:13px;color:var(--muted);line-height:1.6">關閉 AI，記事用內建離線解析（照樣抓日期、週期）。</p>`;
+}
+function openSettings(){
+  const src=aiSrc();
+  openSheet('⚙️ 設定');
+  document.getElementById('sheetBody').innerHTML=`
+    <div class="set-row"><label>AI 來源</label><select id="aiSrcSel">
+      <option value="off">關閉（離線解析，免費）</option>
+      <option value="anthropic">Anthropic 金鑰（可查網路，付費）</option>
+      <option value="ollama">本機 Ollama（Mac，免費）</option>
+    </select></div>
+    <div id="srcFields">${srcFields(src)}</div>
+    <button class="set-save" id="setSave">儲存</button>
+    <div class="status-line">通知權限：${('Notification'in window)?Notification.permission:'不支援'}　·　資料：本機儲存</div>`;
+  const sel=document.getElementById('aiSrcSel');sel.value=src;
+  sel.onchange=()=>{document.getElementById('srcFields').innerHTML=srcFields(sel.value);};
+  document.getElementById('setSave').onclick=()=>{
+    const m=sel.value;localStorage.setItem(AIMODE,m);
+    if(m==='anthropic'){const v=(document.getElementById('apiInput')||{}).value?.trim();if(v)localStorage.setItem(AKEY,v);}
+    if(m==='ollama'){const u=(document.getElementById('oUrl')||{}).value?.trim();const md=(document.getElementById('oModel')||{}).value?.trim();if(u)localStorage.setItem(OURL,u);if(md)localStorage.setItem(OMODEL,md);}
+    showBubble('設定已儲存。');closeSheet();requestNotify();
+  };
+}
+
+/* 語音輸入 */
+let recog=null,recing=false;
+function initRecog(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;
+  recog=new SR();recog.lang='zh-TW';recog.interimResults=false;recog.maxAlternatives=1;
+  recog.onresult=e=>{const t=e.results[0][0].transcript;const inp=document.getElementById('input');inp.value=(inp.value?inp.value+' ':'')+t;inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,110)+'px';};
+  recog.onend=()=>{recing=false;document.getElementById('micBtn').classList.remove('rec');};
+  recog.onerror=()=>{recing=false;document.getElementById('micBtn').classList.remove('rec');showBubble('語音無法啟動，請改用鍵盤的麥克風。');};
+  return true;
+}
+function toggleMic(){
+  if(!recog&&!initRecog()){showBubble('此裝置不支援網頁語音，請用 iPhone 鍵盤上的 🎤 麥克風。');return;}
+  if(recing){recog.stop();return;}
+  try{recing=true;document.getElementById('micBtn').classList.add('rec');recog.start();showBubble('請說話…');}
+  catch(e){recing=false;document.getElementById('micBtn').classList.remove('rec');}
+}
+
+const inp=document.getElementById('input');
+inp.addEventListener('input',()=>{inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,110)+'px';});
+inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleRecord();}});
+document.getElementById('send').onclick=handleRecord;
+document.getElementById('micBtn').onclick=toggleMic;
+document.getElementById('aiBtn').onclick=openAssistant;
+document.getElementById('gearBtn').onclick=openSettings;
+document.getElementById('sheetClose').onclick=closeSheet;
+document.getElementById('mask').onclick=closeSheet;
+document.getElementById('today').innerHTML=todayStr().split(' · ')[0]+'<small>'+todayStr().split(' · ')[1]+'</small>';
+if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+loadItems();render();scheduleChecks();
+</script>
+</body>
+</html>
