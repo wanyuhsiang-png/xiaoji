@@ -87,11 +87,14 @@ def load_news(query, days=10, limit=8):
     for it in ET.fromstring(r.content).iter("item"):
         pub = it.findtext("pubDate")
         items.append({
-            "date": parsedate_to_datetime(pub).strftime("%m-%d") if pub else "",
+            "ts": parsedate_to_datetime(pub) if pub else None,
             "title": it.findtext("title", ""),
             "link": it.findtext("link", ""),
         })
-    return items[:limit]
+    items = sorted((i for i in items if i["ts"]), key=lambda i: i["ts"], reverse=True)[:limit]
+    for i in items:
+        i["date"] = i["ts"].strftime("%m-%d")
+    return items
 
 
 # ---------- 指標 ----------
@@ -235,15 +238,16 @@ def report(code, is_stock):
     risk = lv["第一買點"] - lv["停損"]
     if risk > 0:
         shares = 10000 / risk
-        p(f"\n部位參考：資金 100 萬、單筆最多虧 1%（1 萬元）→ 在第一買點最多買約 **{shares / 1000:.1f} 張**"
-          f"（{shares:,.0f} 股，約 {shares * lv['第一買點'] / 1e4:,.0f} 萬元）\n")
+        qty = f"{shares / 1000:.1f} 張" if shares >= 1000 else f"{shares:,.0f} 股（零股）"
+        p(f"\n部位參考：資金 100 萬、單筆最多虧 1%（1 萬元）→ 在第一買點最多買約 **{qty}**"
+          f"，約 {shares * lv['第一買點'] / 1e4:,.0f} 萬元\n")
 
     p("### 技術指標\n")
     p("| 指標 | 數值 | 狀態 |\n|---|---|---|")
     for n, label in ((5, "週線"), (20, "月線"), (60, "季線"), (120, "半年線"), (240, "年線")):
         v = x[f"ma{n}"]
         p(f"| MA{n} {label} | {fmt(v)} | 股價{'在上' if x.close > v else '在下'}（{fmt(x.close / v - 1, True)}） |")
-    kd_state = "高檔鈍化區" if x.k > 80 else "低檔區" if x.k < 20 else "中性"
+    kd_state = "高檔區" if x.k > 80 else "低檔區" if x.k < 20 else "中性"
     p(f"| KD(9) | K {x.k:.0f} / D {x.d:.0f} | {kd_state}，{'K > D' if x.k > x.d else 'K < D'} |")
     bw = (x.bb_up - x.bb_low) / x.bb_mid
     pos = (x.close - x.bb_low) / (x.bb_up - x.bb_low)
