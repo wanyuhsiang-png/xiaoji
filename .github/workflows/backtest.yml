@@ -1,0 +1,23 @@
+name: backtest
+
+on:
+  push:
+    branches: [claude/high-win-rate-stock-trading-8vy1mc]
+    paths: ["backtest/**", ".github/workflows/backtest.yml"]
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ticker: ["0050.TW", "006208.TW"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas numpy yfinance tabulate
+      - name: Backtest ${{ matrix.ticker }}
+        run: python backtest/backtest.py --ticker ${{ matrix.ticker }} --fee-discount 0.28 | tee -a "$GITHUB_STEP_SUMMARY"
