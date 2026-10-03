@@ -154,6 +154,13 @@ def main():
     close = load_prices(args)
     if close.empty:
         raise SystemExit("抓不到資料，請確認代號或網路")
+    # 台股單日漲跌幅上限 10%，超過代表資料有誤（常見於分割／還原權息處理錯誤）
+    jumps = close.pct_change().abs()
+    bad = jumps[jumps > 0.11]
+    if not bad.empty:
+        print("⚠️ 資料異常：以下日期單日漲跌超過 11%，結果可能失真")
+        for d, v in bad.items():
+            print(f"  {d:%Y-%m-%d}  {close.pct_change()[d]:+.1%}")
     fee = FEE * args.fee_discount
     buy_cost, sell_cost = fee, fee + (TAX_STOCK if args.stock else TAX_ETF)
     label = "模擬資料" if args.demo else (args.csv or args.ticker)
