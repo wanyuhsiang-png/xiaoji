@@ -1,0 +1,28 @@
+name: 個股健檢
+
+on:
+  workflow_dispatch:
+    inputs:
+      stocks:
+        description: "股票代號（多檔用空白分隔，例如 2330 0050 2454）"
+        required: true
+        default: "2330"
+  push:
+    branches: [claude/high-win-rate-stock-trading-8vy1mc]
+    paths: ["backtest/analyze.py", ".github/workflows/analyze.yml"]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas numpy yfinance requests
+      - name: 分析 ${{ github.event.inputs.stocks || '2330 0050' }}
+        working-directory: backtest
+        env:
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+          STOCKS: ${{ github.event.inputs.stocks || '2330 0050' }}
+        run: python analyze.py $STOCKS | tee -a "$GITHUB_STEP_SUMMARY"

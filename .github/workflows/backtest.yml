@@ -1,0 +1,54 @@
+name: backtest
+
+on:
+  push:
+    branches: [claude/high-win-rate-stock-trading-8vy1mc]
+    paths: ["backtest/**", ".github/workflows/backtest.yml"]
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ticker: "0050.TW"
+            extra: "--start 2014-01-03"  # Yahoo 2014-01-02 以前的還原價有誤
+          - ticker: "006208.TW"
+            extra: ""
+          - ticker: "00878.TW"
+            extra: ""
+          - ticker: "2330.TW"
+            extra: "--stock"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas numpy yfinance tabulate
+      - name: Backtest ${{ matrix.ticker }}
+        run: python backtest/backtest.py --ticker ${{ matrix.ticker }} --fee-discount 0.28 ${{ matrix.extra }} | tee -a "$GITHUB_STEP_SUMMARY"
+
+  foreign:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "大盤外資 × 0050"
+            args: "--ticker 0050.TW"
+          - name: "個股外資 × 2330"
+            args: "--stock-id 2330 --stock"
+    name: foreign (${{ matrix.name }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas numpy yfinance tabulate requests
+      - name: Foreign flow ${{ matrix.name }}
+        working-directory: backtest
+        env:
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+        run: python foreign_flow.py ${{ matrix.args }} | tee -a "$GITHUB_STEP_SUMMARY"
