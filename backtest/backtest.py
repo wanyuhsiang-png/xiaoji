@@ -57,6 +57,11 @@ def signal_ma200(close):
     return (close > close.rolling(200).mean()).astype(int)
 
 
+def signal_ma200_half(close):
+    """MA200 之上全額持有，跌破只減碼到一半。"""
+    return pd.Series(np.where(close > close.rolling(200).mean(), 1.0, 0.5), index=close.index)
+
+
 def signal_rsi2(close):
     ma200 = close.rolling(200).mean()
     ma5 = close.rolling(5).mean()
@@ -72,11 +77,13 @@ def signal_rsi2(close):
 
 
 def run(close, pos, buy_cost, sell_cost):
-    """pos[t] 為第 t 日收盤後的持倉，承擔第 t+1 日報酬。"""
+    """pos[t] 為第 t 日收盤後的持倉（0~1），承擔第 t+1 日報酬。
+    逐筆交易以「加碼到賣出」計算；半倉策略即為可調整的那一半部位。"""
     ret = close.pct_change().fillna(0)
     held = pos.shift(1).fillna(0)
     change = pos.diff().fillna(pos.iloc[0])
-    cost = np.where(change > 0, buy_cost, 0) + np.where(change < 0, sell_cost, 0)
+    # 成本依部位變動比例計算（支援半倉）
+    cost = change.clip(lower=0) * buy_cost + (-change).clip(lower=0) * sell_cost
     daily = held * ret - cost
     equity = (1 + daily).cumprod()
 
@@ -119,7 +126,12 @@ def stats(name, equity, trades, exposure):
     }
 
 
-STRATEGIES = [("買進持有", signal_buy_hold), ("MA200 趨勢", signal_ma200), ("RSI(2) 均值回歸", signal_rsi2)]
+STRATEGIES = [
+    ("買進持有", signal_buy_hold),
+    ("MA200 趨勢", signal_ma200),
+    ("MA200 減碼一半", signal_ma200_half),
+    ("RSI(2) 均值回歸", signal_rsi2),
+]
 
 
 def report(close, mask, buy_cost, sell_cost, title):
