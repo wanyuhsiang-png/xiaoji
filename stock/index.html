@@ -159,7 +159,7 @@ function assess(I) {
   let trend, action, tone;
   if (above200 && ma60Up) [trend, action, tone] = ["多頭", "續抱／可分批布局", "bull"];
   else if (above200) [trend, action, tone] = ["多頭但走緩", "續抱，不追高", "mid"];
-  else [trend, action, tone] = ["空頭", "依規則減碼一半，不新增部位", "bear"];
+  else [trend, action, tone] = ["空頭", "依規則減碼一半，不新增部位；收盤站回 MA200 再買回", "bear"];
 
   const hot = at("k") > 80 && c > at("bbUp") * .99, cold = at("k") < 20 && c < at("bbLow") * 1.01;
   const gx = at("k") > at("d") && I.k[n - 1] <= I.d[n - 1], dx = at("k") < at("d") && I.k[n - 1] >= I.d[n - 1];
@@ -176,7 +176,9 @@ function assess(I) {
   const stop = rnd(Math.min(buy2, above200 ? at("ma60") : buy2) - at("atr"));
   const reasons = [`收盤${above200 ? "站上" : "跌破"} MA200（${fmt(at("ma200"))}）`, `季線 MA60 ${ma60Up ? "上揚" : "下彎"}`];
   if (bull) reasons.push("均線多頭排列"); if (bear) reasons.push("均線空頭排列");
-  return {trend, action, tone, timing, reasons, buy1, buy2, stop, cut: rnd(at("ma200")), res: res.slice(0, 2)};
+  // 移動停利線（選用）：近 60 日最高收盤 − 5 倍 ATR，收盤跌破減碼一半，創 20 日新高再買回
+  const trail = rnd(Math.max(...I.c.slice(-60)) - 5 * at("atr"));
+  return {trend, action, tone, timing, reasons, above200, buy1, buy2, stop, trail, cut: rnd(at("ma200")), res: res.slice(0, 2)};
 }
 
 // ---------- 畫面 ----------
@@ -200,6 +202,7 @@ function welcome() {
     <h2><span class="bar"></span>怎麼看這份報告</h2>
     <b>結論</b>：依 200 日均線與季線方向判斷多空（回測驗證過的主要規則：跌破 MA200 減碼一半）。<br>
     <b>參考價位</b>：買點取最近的支撐（月線、季線、布林下軌、20 日低），停損再扣 1 倍 ATR 波動。<br>
+    <b>上漲時</b>：續抱不設停利。回測顯示「漲多減碼」「突破加碼」都比較差；「移動停利」可降低回撤但會少賺一點，列為選用。<br>
     <b>部位</b>：依「單筆最多虧總資金 1%」計算可買張數，可自行調整資金。<br>
     <b>其他指標、法人、新聞</b>：只作參考，回測顯示它們對短期漲跌預測力有限。<br><br>
     點上方 ★ 快速查詢，或輸入代號。</div>`;
@@ -243,7 +246,10 @@ function render(code, rows, info, inst, margin, news) {
     {k: "第一買點", p: A.buy1, d: "最近支撐", c: "k-buy"},
     {k: "第二買點", p: A.buy2, d: "下一層支撐", c: "k-buy"},
     {k: "停損", p: A.stop, d: "第二買點再扣 1 倍 ATR", c: "k-stop"},
-    {k: "減碼線", p: A.cut, d: "收盤跌破 MA200 減碼一半", c: "k-cut"},
+    A.above200
+      ? {k: "減碼線", p: A.cut, d: "收盤跌破 MA200 減碼一半", c: "k-cut"}
+      : {k: "買回線", p: A.cut, d: "收盤站回 MA200 買回減碼的一半", c: "k-cut"},
+    ...(A.above200 ? [{k: "移動停利", p: A.trail, d: A.trail < c ? "選用：收盤跌破減碼一半，創 20 日新高買回" : "選用：已跌破，此規則下應減碼一半", c: "k-cut"}] : []),
   ].sort((a, b) => b.p - a.p);
 
   const at = k => I[k][n];
@@ -283,7 +289,7 @@ function render(code, rows, info, inst, margin, news) {
     <div class="price"><b class="${cls(chg)}">${fmt(c, c < 100 ? 2 : 0)}</b><span class="chg ${cls(chg)}">${chg > 0 ? "▲" : chg < 0 ? "▼" : ""} ${fmt(Math.abs(chg), c < 100 ? 2 : 0)}（${pct(chg / prev)}）</span></div>
     <div class="verdict v-${A.tone}">
       <div class="v">${A.trend}</div><div class="a">→ ${A.action}</div>
-      <ul><li>短線位置：${A.timing}</li><li>依據：${A.reasons.join("；")}</li></ul>
+      <ul><li>短線位置：${A.timing}</li><li>依據：${A.reasons.join("；")}</li>${A.above200 ? "<li>上漲時：續抱、不設停利目標（回測顯示漲到壓力就賣會少賺）；想降低回撤可用下方「移動停利」</li>" : ""}</ul>
     </div>
     ${enough ? "" : `<div class="warn">上市未滿一年，MA200／年線資料不足，結論僅供參考。</div>`}
     ${jumps.length ? `<div class="warn">${jumps.slice(-3).join("、")} 有超過 11% 的跳空，可能是除權息或股票分割，均線與價位可能失真。</div>` : ""}
