@@ -52,3 +52,24 @@ jobs:
         env:
           FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
         run: python foreign_flow.py ${{ matrix.args }} | tee -a "$GITHUB_STEP_SUMMARY"
+
+  upside:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - args: "--ticker 0050.TW"
+          - args: "--ticker 006208.TW"
+          - args: "--ticker 2330.TW --stock"
+          - args: "--ticker 2454.TW --stock"
+    name: upside (${{ matrix.args }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas numpy yfinance tabulate
+      - name: Upside rules ${{ matrix.args }}
+        working-directory: backtest
+        run: python upside.py ${{ matrix.args }} | tee -a "$GITHUB_STEP_SUMMARY"
