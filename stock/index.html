@@ -21,6 +21,11 @@
   header h1{font-size:22px;font-weight:800;margin:0;letter-spacing:.5px;}
   header .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);}
   header .sub{margin-left:auto;font-size:12px;color:var(--muted);}
+  .rt{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:4px 10px;font-weight:700;}
+  .rt.on{border-color:var(--teal);color:var(--teal-deep);background:var(--teal-wash);}
+  .live{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:var(--up);border-radius:6px;padding:1px 6px;margin-right:4px;vertical-align:1px;}
+  .alert{border-radius:10px;padding:9px 12px;font-size:13.5px;font-weight:700;margin-top:10px;line-height:1.5;}
+  .al-up{background:var(--up-wash);color:var(--up);} .al-down{background:var(--down-wash);color:var(--down);} .al-mid{background:var(--teal-wash);color:var(--teal-deep);}
   form{display:flex;gap:8px;}
   input{flex:1;min-width:0;font:inherit;font-size:17px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);outline:none;}
   input:focus{border-color:var(--teal);}
@@ -87,7 +92,7 @@
 </head>
 <body>
 <div class="wrap">
-  <header><span class="dot"></span><h1>股票健檢</h1><span class="sub">收盤後資料</span></header>
+  <header><span class="dot"></span><h1>股票健檢</h1><button class="sub rt" id="rtBtn" type="button"></button></header>
   <form id="f" autocomplete="off">
     <input id="q" inputmode="numeric" placeholder="輸入股票代號，例如 2330" aria-label="股票代號">
     <button class="go" type="submit">查詢</button>
@@ -118,6 +123,31 @@ async function fm(dataset, params) {
   if (j.status && j.status !== 200) throw new Error(j.msg || `FinMind 錯誤 ${j.status}`);
   return j.data || [];
 }
+
+// ---------- 即時報價（富果，金鑰只存在本機）----------
+const fugleKey = () => store.get("fugleKey", "");
+async function fugle(code) {
+  const r = await fetch(`https://api.fugle.tw/marketdata/v1.0/stock/intraday/quote/${encodeURIComponent(code)}`, {headers: {"X-API-KEY": fugleKey()}});
+  if (r.status === 401 || r.status === 403) throw new Error("富果金鑰無效，請點右上角重新設定");
+  if (r.status === 429) throw new Error("即時報價查詢太頻繁，稍後會自動再試");
+  if (!r.ok) throw new Error(`即時報價錯誤 ${r.status}`);
+  return r.json();
+}
+function rtLabel() {
+  const on = !!fugleKey(), b = $("#rtBtn");
+  b.textContent = on ? "● 即時報價" : "收盤資料｜開啟即時"; b.classList.toggle("on", on);
+}
+$("#rtBtn").onclick = () => {
+  const cur = fugleKey();
+  const v = prompt(cur ? "已設定富果金鑰。要更換請貼上新金鑰；清空後按確定可關閉即時報價。" :
+    "貼上富果（Fugle）行情 API 金鑰即可在盤中顯示即時價。\n金鑰只存在這支手機，不會上傳。", cur);
+  if (v === null) return;
+  store.set("fugleKey", v.trim()); rtLabel();
+  const code = $("#q").value.trim(); if (code) run(code);
+};
+const hhmm = t => { if (!t) return ""; const ms = t > 1e14 ? t / 1000 : t > 1e11 ? t : t * 1000;
+  return new Date(ms).toLocaleTimeString("zh-TW", {hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Taipei"}); };
+let timer = null;
 
 // ---------- 指標 ----------
 const sma = (a, n) => a.map((_, i) => i < n - 1 ? NaN : a.slice(i - n + 1, i + 1).reduce((s, x) => s + x, 0) / n);
@@ -213,7 +243,9 @@ async function run(code) {
   history.replaceState(null, "", "#" + code);
   $("#out").innerHTML = `<div class="state"><div class="spin"></div>查詢 ${esc(code)} 中…</div>`;
   try {
-    const [price, info, inst, margin, ...news] = await Promise.all([
+    clearInterval(timer);
+    const [quote, price, info, inst, margin, ...news] = await Promise.all([
+      fugleKey() ? fugle(code).catch(e => ({error: e.message})) : null,
       fm("TaiwanStockPrice", {data_id: code, start_date: daysAgo(600)}),
       fm("TaiwanStockInfo", {data_id: code}).catch(() => []),
       fm("TaiwanStockInstitutionalInvestorsBuySell", {data_id: code, start_date: daysAgo(45)}).catch(() => null),
@@ -224,15 +256,27 @@ async function run(code) {
     if (rows.length < 30) throw new Error(`找不到 ${code} 的股價資料，請確認代號`);
     const recent = [code, ...store.get("recent", []).filter(c => c !== code)].slice(0, 10);
     store.set("recent", recent); chips();
-    render(code, rows, info, inst, margin, news.flat());
+    const args = [code, rows, info, inst, margin, news.flat()];
+    render(...args, quote);
+    // 盤中每分鐘更新即時價（台灣時間 09:00–13:35、頁面在前景時）
+    if (quote && !quote.error) timer = setInterval(async () => {
+      const tw = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Taipei"})), m = tw.getHours() * 60 + tw.getMinutes();
+      if (document.hidden || tw.getDay() % 6 === 0 || m < 540 || m > 815 || $("#q").value.trim() !== code) return;
+      const q = await fugle(code).catch(e => ({error: e.message}));
+      const y = scrollY; render(...args, q); scrollTo(0, y);
+    }, 60000);
   } catch (e) {
     $("#out").innerHTML = `<div class="state">😵 ${esc(e.message)}<br><small>免費資料每小時約可查 40 次，若超過請稍後再試。</small></div>`;
   }
 }
 
-function render(code, rows, info, inst, margin, news) {
+function render(code, rows, info, inst, margin, news, quote) {
   const I = indicators(rows), n = I.c.length - 1, A = assess(I);
-  const c = I.c[n], prev = I.c[n - 1], chg = c - prev;
+  // 即時價只在比 FinMind 最新收盤更新的交易日才使用；指標仍以收盤計算
+  const lp = quote && !quote.error ? (quote.lastPrice ?? quote.closePrice ?? quote.lastTrade?.price) : null;
+  const live = lp > 0 && quote.date > I.date[n];
+  const c = live ? lp : I.c[n], prev = live ? (quote.previousClose ?? quote.referencePrice ?? I.c[n]) : I.c[n - 1], chg = c - prev;
+  const liveTime = live ? hhmm(quote.lastUpdated ?? quote.lastTrade?.time) : "";
   const name = info[0]?.stock_name || "", ind = info[0]?.industry_category || "";
   const fav = store.get("fav", ["2330", "0050"]).includes(code);
   const enough = rows.length >= 240;
@@ -242,14 +286,14 @@ function render(code, rows, info, inst, margin, news) {
 
   const levels = [
     ...A.res.map((p, i) => ({k: `壓力 ${i + 1}`, p, d: "布林上軌／近期高點", c: "k-res"})).reverse(),
-    {k: "現價", p: c, d: I.date[n], now: true},
+    {k: "現價", p: c, d: live ? `盤中 ${liveTime}` : I.date[n], now: true},
     {k: "第一買點", p: A.buy1, d: "最近支撐", c: "k-buy"},
     {k: "第二買點", p: A.buy2, d: "下一層支撐", c: "k-buy"},
     {k: "停損", p: A.stop, d: "第二買點再扣 1 倍 ATR", c: "k-stop"},
     A.above200
       ? {k: "減碼線", p: A.cut, d: "收盤跌破 MA200 減碼一半", c: "k-cut"}
       : {k: "買回線", p: A.cut, d: "收盤站回 MA200 買回減碼的一半", c: "k-cut"},
-    ...(A.above200 ? [{k: "移動停利", p: A.trail, d: A.trail < c ? "選用：收盤跌破減碼一半，創 20 日新高買回" : "選用：已跌破，此規則下應減碼一半", c: "k-cut"}] : []),
+    ...(A.above200 ? [{k: "移動停利", p: A.trail, d: A.trail < I.c[n] ? "選用：收盤跌破減碼一半，創 20 日新高買回" : "選用：已跌破，此規則下應減碼一半", c: "k-cut"}] : []),
   ].sort((a, b) => b.p - a.p);
 
   const at = k => I[k][n];
@@ -276,6 +320,18 @@ function render(code, rows, info, inst, margin, news) {
       <tr><td>融券</td><td class="r">${sign(m.ShortSaleTodayBalance).replace("+", "")}</td><td class="r ${cls(ds)}">${sign(ds)}</td></tr></table>`;
   }
 
+  let alerts = "";
+  if (live) {
+    const al = (t, k) => `<div class="alert al-${k}">${t}</div>`;
+    if (A.above200 && c < A.cut) alerts += al(`盤中已跌破減碼線 ${fmt(A.cut)}，若收盤仍在下方，依規則減碼一半`, "down");
+    else if (!A.above200 && c > A.cut) alerts += al(`盤中已站上買回線 ${fmt(A.cut)}，若收盤仍在上方，依規則買回一半`, "up");
+    if (c < A.stop) alerts += al(`盤中跌破停損 ${fmt(A.stop)}`, "down");
+    else if (c <= A.buy2) alerts += al(`盤中到第二買點 ${fmt(A.buy2)} 附近`, "mid");
+    else if (c <= A.buy1) alerts += al(`盤中到第一買點 ${fmt(A.buy1)} 附近`, "mid");
+    if (A.above200 && c < A.trail && I.c[n] >= A.trail) alerts += al(`盤中跌破移動停利 ${fmt(A.trail)}（選用規則，以收盤為準）`, "down");
+  }
+  const qErr = quote?.error ? `<div class="warn">${esc(quote.error)}，目前顯示收盤資料。</div>` : "";
+
   const seen = new Set();
   const newsList = news.filter(x => x.title && !seen.has(x.title) && seen.add(x.title)).sort((a, b) => (b.date > a.date ? 1 : -1)).slice(0, 8);
   const gnews = `https://news.google.com/search?q=${encodeURIComponent(code + " " + name)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
@@ -283,11 +339,12 @@ function render(code, rows, info, inst, margin, news) {
   $("#out").innerHTML = `
   <div class="card">
     <div class="hero-top">
-      <div><div class="hero-name">${esc(name || code)}<small>${esc(code)}</small></div><div class="hero-meta">${esc(ind)}｜${I.date[n]} 收盤</div></div>
+      <div><div class="hero-name">${esc(name || code)}<small>${esc(code)}</small></div><div class="hero-meta">${live ? `<span class="live">即時</span>${liveTime}｜指標以 ${I.date[n]} 收盤計算` : `${esc(ind)}｜${I.date[n]} 收盤`}</div></div>
       <button class="fav ${fav ? "on" : ""}" id="favBtn">${fav ? "★ 已關注" : "☆ 關注"}</button>
     </div>
     <div class="price"><b class="${cls(chg)}">${fmt(c, c < 100 ? 2 : 0)}</b><span class="chg ${cls(chg)}">${chg > 0 ? "▲" : chg < 0 ? "▼" : ""} ${fmt(Math.abs(chg), c < 100 ? 2 : 0)}（${pct(chg / prev)}）</span></div>
-    <div class="verdict v-${A.tone}">
+    ${qErr}${alerts}
+    <div class="verdict v-${A.tone}" style="margin-top:10px">
       <div class="v">${A.trend}</div><div class="a">→ ${A.action}</div>
       <ul><li>短線位置：${A.timing}</li><li>依據：${A.reasons.join("；")}</li>${A.above200 ? "<li>上漲時：續抱、不設停利目標（回測顯示漲到壓力就賣會少賺）；想降低回撤可用下方「移動停利」</li>" : ""}</ul>
     </div>
@@ -321,7 +378,7 @@ function render(code, rows, info, inst, margin, news) {
     <a class="more" href="${gnews}" target="_blank" rel="noopener">在 Google 新聞看更多 →</a>
   </div>
 
-  <p class="note">本頁為規則化整理，非投資建議。價位為依支撐壓力與波動計算的參考點，不保證觸及或守住。股價未還原權息。資料來源：FinMind。</p>`;
+  <p class="note">本頁為規則化整理，非投資建議。價位為依支撐壓力與波動計算的參考點，不保證觸及或守住。股價未還原權息。資料來源：FinMind${live ? "；即時價：富果" : ""}。</p>`;
 
   $("#favBtn").onclick = () => toggleFav(code);
   const renderSize = () => {
@@ -335,6 +392,7 @@ function render(code, rows, info, inst, margin, news) {
   renderSize();
 }
 
+rtLabel();
 chips();
 const start = decodeURIComponent(location.hash.slice(1));
 start ? run(start) : welcome();
